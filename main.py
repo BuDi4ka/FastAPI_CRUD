@@ -9,5 +9,5 @@ async def read_root():
 
 
 @app.get('/greet/{name}')
-async def greet_name(name:str) -> dict:
-    return {'message': f'Hello {name}'}
+async def greet_name(name:str, age:int) -> dict:
+    return {'message': f'Hello {name}', 'age': age}
