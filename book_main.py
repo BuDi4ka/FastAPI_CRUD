@@ -13,8 +13,12 @@ async def get_all_books() -> list:
 
 
 @app.post("/books")
-async def create_a_book() -> dict:
-    pass
+async def create_a_book(book_data: Book) -> dict:
+    new_book = book_data.model_dump()
+
+    books.append(new_book)
+
+    return new_book
 
 
 @app.get("/books/{book_id}")
