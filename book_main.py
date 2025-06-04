@@ -1,12 +1,14 @@
 from fastapi import FastAPI
-from books import books
+
+from books import books_list
+from book_models import Book
 
 app = FastAPI()
 
 
-@app.get("/books")
+@app.get("/books", response_model=Book)
 async def get_all_books() -> list:
-    return books
+    return books_list
 
 
 @app.post("/books")
