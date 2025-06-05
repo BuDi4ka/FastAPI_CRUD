@@ -1,8 +1,8 @@
-from sqlmodel import create_engine, text
-from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlmodel import text
+from sqlalchemy.ext.asyncio import create_async_engine
 from src.config import Config
 
-engine = AsyncEngine(create_engine(url=Config.DATABASE_URL, echo=True))
+engine = create_async_engine(Config.DATABASE_URL, echo=True)
 
 
 async def init_db():
