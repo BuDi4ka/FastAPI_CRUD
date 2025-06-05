@@ -1,6 +1,8 @@
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select, desc
 
+from datetime import datetime
+
 from .models import Book
 from .schemas import BookCreateModel, BookUpdateModel
 
@@ -21,15 +23,13 @@ class BookService:
 
         return book if book is not None else None
 
-    async def create_book(
-        self, book_create_data: BookCreateModel, session: AsyncSession
-    ):
-        book_create_data_dict = book_create_data.model_dump()
-
-        new_book = Book(**book_create_data_dict)
+    async def create_book(self, book_create_data: BookCreateModel, session: AsyncSession):
+        book_data = book_create_data.model_dump()
+        new_book = Book(**book_data)
 
         session.add(new_book)
         await session.commit()
+        await session.refresh(new_book)
 
         return new_book
 

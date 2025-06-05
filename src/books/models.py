@@ -11,10 +11,10 @@ class Book(SQLModel, table=True):
     uid: UUID = Field(
         sa_column=Column(pg.UUID, nullable=False, primary_key=True, default=uuid4)
     )
-    title_test: str
+    title: str
     author: str 
     publisher: str
-    published_date: date 
+    published_date: date
     page_count: int
     language: str
     created_at: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
