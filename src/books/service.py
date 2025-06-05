@@ -8,16 +8,53 @@ from .schemas import BookCreateModel, BookUpdateModel
 class BookService:
     async def get_all_books(self, session: AsyncSession):
         stmt = select(Book).order_by(desc(Book.created_at))
+        result = await session.exec(stmt)
+        books = result.all()
+
+        return books
 
     async def get_book(self, book_uid: str, session: AsyncSession):
-        pass
+        stmt = select(Book).where(Book.uid == book_uid)
+        result = await session.exec(stmt)
 
-    async def create_book(self, book_create_data: BookCreateModel, session: AsyncSession):
-        pass
+        book = result.first()
 
-    async def update_book(self, book_update_data: BookUpdateModel, session: AsyncSession):
-        pass
+        return book if book is not None else None
 
-    async def update_book(self, book_uid: str, session: AsyncSession):
-        pass
-    
+    async def create_book(
+        self, book_create_data: BookCreateModel, session: AsyncSession
+    ):
+        book_create_data_dict = book_create_data.model_dump()
+
+        new_book = Book(**book_create_data_dict)
+
+        session.add(new_book)
+        await session.commit()
+
+        return new_book
+
+    async def update_book(
+        self, book_uid: str, book_update_data: BookUpdateModel, session: AsyncSession
+    ):
+        book_to_update = self.get_book(book_uid, session)
+        update_data_dict = book_update_data.model_dump()
+
+        if book_to_update is not None:
+            for k, v in update_data_dict.items():
+                setattr(book_to_update, k, v)
+        else:
+            return None
+
+        await session.commit()
+
+        return book_to_update
+
+    async def delete_book(self, book_uid: str, session: AsyncSession):
+        book_to_delete = self.get_book(book_uid, session)
+
+        if book_to_delete is not None:
+            await session.delete(book_to_delete)
+            session.commit
+
+        else:
+            return None
