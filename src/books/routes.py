@@ -1,10 +1,11 @@
 from typing import List
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status, Depends
 from fastapi.exceptions import HTTPException
 
 from src.books.book_data import books
 from src.books.schemas import Book, BookUpdate
+from src.db.main import get_session
 
 
 book_router = APIRouter()
