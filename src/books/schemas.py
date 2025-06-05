@@ -1,8 +1,22 @@
 from pydantic import BaseModel
+from uuid import UUID
+
+from datetime import datetime
 
 
 class Book(BaseModel):
-    id: int
+    uid: UUID
+    title: str
+    author: str
+    publisher: str
+    published_date: str
+    page_count: int
+    language: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class BookCreateModel(BaseModel):
     title: str
     author: str
     publisher: str
@@ -11,7 +25,7 @@ class Book(BaseModel):
     language: str
 
 
-class BookUpdate(BaseModel):
+class BookUpdateModel(BaseModel):
     title: str
     author: str
     publisher: str
