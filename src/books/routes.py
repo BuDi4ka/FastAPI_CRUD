@@ -1,19 +1,21 @@
-from fastapi import FastAPI, status
-from fastapi.exceptions import HTTPException
 from typing import List
 
-from book_list import books
-from book_models import Book, BookUpdate
+from fastapi import APIRouter, status
+from fastapi.exceptions import HTTPException
 
-app = FastAPI()
+from src.books.book_data import books
+from src.books.schemas import Book, BookUpdate
 
 
-@app.get("/books", response_model=List[Book])
+book_router = APIRouter()
+
+
+@book_router.get("/", response_model=List[Book])
 async def get_all_books() -> list:
     return books
 
 
-@app.post("/books", status_code=status.HTTP_201_CREATED)
+@book_router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_a_book(book_data: Book) -> dict:
     new_book = book_data.model_dump()
 
@@ -22,7 +24,7 @@ async def create_a_book(book_data: Book) -> dict:
     return new_book
 
 
-@app.get("/books/{book_id}")
+@book_router.get("/{book_id}")
 async def get_book(book_id: int) -> dict:
     for book in books:
         if book["id"] == book_id:
@@ -31,7 +33,7 @@ async def get_book(book_id: int) -> dict:
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
 
 
-@app.patch("/books/{book_id}")
+@book_router.patch("/{book_id}")
 async def update_book(book_id: int, book_update_data: BookUpdate) -> dict:
     for book in books:
         if book["id"] == book_id:
@@ -47,7 +49,7 @@ async def update_book(book_id: int, book_update_data: BookUpdate) -> dict:
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Book not found")
 
 
-@app.delete("/books/{book_id}", status_code=status.HTTP_204_NO_CONTENT)
+@book_router.delete("/{book_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_book(book_id: int):
     for book in books:
         if book['id'] == book_id:
