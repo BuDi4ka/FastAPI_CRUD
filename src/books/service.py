@@ -3,7 +3,7 @@ from sqlmodel import select, desc
 
 from datetime import datetime
 
-from .models import Book
+from .models import Book 
 from .schemas import BookCreateModel, BookUpdateModel
 
 
@@ -36,12 +36,13 @@ class BookService:
     async def update_book(
         self, book_uid: str, book_update_data: BookUpdateModel, session: AsyncSession
     ):
-        book_to_update = self.get_book(book_uid, session)
+        book_to_update = await self.get_book(book_uid, session)
         update_data_dict = book_update_data.model_dump()
 
         if book_to_update is not None:
             for k, v in update_data_dict.items():
                 setattr(book_to_update, k, v)
+            book_to_update.updated_at = datetime.now()
         else:
             return None
 
@@ -50,11 +51,11 @@ class BookService:
         return book_to_update
 
     async def delete_book(self, book_uid: str, session: AsyncSession):
-        book_to_delete = self.get_book(book_uid, session)
+        book_to_delete = await self.get_book(book_uid, session)
 
         if book_to_delete is not None:
             await session.delete(book_to_delete)
-            session.commit
+            await session.commit()
 
         else:
             return None

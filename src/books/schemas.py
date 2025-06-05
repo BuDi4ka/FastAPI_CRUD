@@ -31,3 +31,4 @@ class BookUpdateModel(BaseModel):
     publisher: str
     page_count: int
     language: str
+    
