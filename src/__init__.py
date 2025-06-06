@@ -7,22 +7,20 @@ from src.db.main import init_db
 
 
 @asynccontextmanager
-async def lifespan(app:FastAPI):
-    print('server is starting')
+async def lifespan(app: FastAPI):
+    print("server is starting")
     await init_db()
     yield
-    print('server is stopped')
+    print("server is stopped")
 
 
 version = "v1"
 
 app = FastAPI(
-    title="Bookly", 
-    description="A REST API for book review web service", 
+    title="Bookly",
+    description="A REST API for book review web service",
     version=version,
-    lifespan=lifespan,
 )
 
-app.include_router(book_router, prefix=f"/api/{version}/books", tags=['books'])
-app.include_router(auth_router, prefix=f"/api/{version}/auth", tags=['auth'])
-
+app.include_router(book_router, prefix=f"/api/{version}/books", tags=["books"])
+app.include_router(auth_router, prefix=f"/api/{version}/auth", tags=["auth"])

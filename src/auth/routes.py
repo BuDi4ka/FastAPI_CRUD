@@ -51,7 +51,11 @@ async def login(
 
         if password_valid:
             access_token = create_access_token(
-                user_data={"email": user.email, "user_uid": str(user.uid)}
+                user_data={
+                    "email": user.email,
+                    "user_uid": str(user.uid),
+                    "role": user.role,
+                }
             )
 
             refresh_token = create_access_token(
@@ -90,21 +94,15 @@ async def get_new_access_token(token_details: dict = Depends(RefreshTokenBearer(
     return {}
 
 
-@auth_router.get('/me')
-async def get_current_user(user = Depends(get_current_user)):
-    return user 
+@auth_router.get("/me")
+async def get_current_user(user=Depends(get_current_user)):
+    return user
 
 
-@auth_router.get('/logout', status_code=status.HTTP_200_OK)
+@auth_router.get("/logout", status_code=status.HTTP_200_OK)
 async def revoke_token(token_details: dict = Depends(AccessTokenBearer())):
-    jti = token_details['jti']
+    jti = token_details["jti"]
 
     await add_jti_to_blocklist(jti)
 
-    return JSONResponse(
-        content={
-            "message": "Logged out successfully"
-        }
-    )
-
-
+    return JSONResponse(content={"message": "Logged out successfully"})
