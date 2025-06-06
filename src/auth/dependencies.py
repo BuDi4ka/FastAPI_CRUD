@@ -50,7 +50,7 @@ class AccessTokenBearer(TokenBearer):
             )
 
 
-class AccessTokenBearer(TokenBearer):
+class RefreshTokenBearer(TokenBearer):
 
     def verify_token_data(self, token_data: dict) -> None:
         if token_data and not token_data.get("refresh"):
