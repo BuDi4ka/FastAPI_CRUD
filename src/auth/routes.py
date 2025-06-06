@@ -3,11 +3,13 @@ from fastapi.responses import JSONResponse
 from sqlmodel.ext.asyncio.session import AsyncSession
 from datetime import timedelta, datetime
 
-from src.db.main import get_session
 from .schemas import UserCreateModel, UserResponseModel, UserLoginModel
 from .service import UserService
 from .utils import create_access_token, decode_token, verify_password
-from .dependencies import RefreshTokenBearer
+from .dependencies import RefreshTokenBearer, AccessTokenBearer
+
+from src.db.main import get_session
+from src.db.redis import add_jti_to_blocklist
 
 
 auth_router = APIRouter()
@@ -86,3 +88,18 @@ async def get_new_access_token(token_details: dict = Depends(RefreshTokenBearer(
     )
 
     return {}
+
+
+@auth_router.get('/logout', status_code=status.HTTP_200_OK)
+async def revoke_token(token_details: dict = Depends(AccessTokenBearer())):
+    jti = token_details['jti']
+
+    await add_jti_to_blocklist(jti)
+
+    return JSONResponse(
+        content={
+            "message": "Logged out successfully"
+        }
+    )
+
+
