@@ -65,8 +65,7 @@ async def login(
                     "user": {"email": user.email, "uid": str(user.uid)},
                 }
             )
-        
+
     raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail='Invalid email or password'
+        status_code=status.HTTP_403_FORBIDDEN, detail="Invalid email or password"
     )
