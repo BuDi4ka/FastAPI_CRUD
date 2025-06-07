@@ -15,17 +15,38 @@ review_service = ReviewService()
 access_token_bearer = AccessTokenBearer()
 
 
-@review_router.post("/book/{book_uid}", response_model=ReviewResponseModel)
-async def add_review_to_book(
-    book_uid: str,
+# @review_router.post("/book/{book_uid}", response_model=ReviewResponseModel)
+# async def add_review_to_book(
+#     book_uid: str,
+#     review_data: ReviewCreateModel,
+#     token_details: dict = Depends(access_token_bearer),
+#     session: AsyncSession = Depends(get_session),
+# ):
+#     user_uid = token_details.get("user")["user_uid"]
+
+#     new_review = await review_service.add_review_to_book(
+#         user_uid, book_uid, review_data, session
+#     )
+
+#     return new_review
+
+@review_router.post("/add", response_model=ReviewResponseModel)
+async def add_review(
     review_data: ReviewCreateModel,
     token_details: dict = Depends(access_token_bearer),
     session: AsyncSession = Depends(get_session),
 ):
     user_uid = token_details.get("user")["user_uid"]
-
+    
+    # Dynamically create Enum for user's books
+    BookChoices = await review_service.get_user_books_enum(user_uid, session)
+    # Update the Enum in the Pydantic model
+    ReviewCreateModel.update_forward_refs(BookChoices=BookChoices)
+    
     new_review = await review_service.add_review_to_book(
-        user_uid, book_uid, review_data, session
+        user_uid=user_uid,
+        review_data=review_data,
+        session=session
     )
-
+    
     return new_review

@@ -27,20 +27,13 @@ async def get_all_books(
     return books
 
 
-@book_router.get("/user/{user_uid}", response_model=List[Book])
+@book_router.get("/user-books", response_model=List[Book])
 async def get_user_books(
-    user_uid: str,
     session: AsyncSession = Depends(get_session),
     token_details: dict = Depends(access_token_bearer),
 ):
     
-    token_user_uid = token_details.get("user")["user_uid"]
-
-    if token_user_uid != user_uid:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only access your own books"
-        )
+    user_uid = token_details.get("user")["user_uid"]
     
     books = await book_service.get_user_books(user_uid, session)
     return books
