@@ -60,17 +60,6 @@ book_service = BookService()
 
 
 class ReviewService:
-    async def get_user_books_enum(self, user_uid: str, session: AsyncSession) -> type[Enum]:
-        """Creates dynamic Enum for user's books"""
-        books = await book_service.get_user_books(user_uid, session)
-        
-        book_choices = {
-            f"{book.title}_{book.uid}": book.uid 
-            for book in books
-        }
-        
-        return Enum('BookChoices', book_choices)
-
     async def add_review_to_book(
         self,
         user_uid: str,
@@ -78,9 +67,17 @@ class ReviewService:
         session: AsyncSession,
     ):
         try:
-            # Extract book_uid from enum value
-            book_uid = review_data.book_choice.value
-
+            # Get book_uid from enum value
+            book_uid = review_data.book_uid.value
+            
+            # Check if book exists
+            book = await book_service.get_book(book_uid, session)
+            if not book:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Book not found"
+                )
+            
             # Create new review
             new_review = Review(
                 review_text=review_data.review_text,
@@ -88,17 +85,17 @@ class ReviewService:
                 user_uid=user_uid,
                 book_uid=book_uid
             )
-
+            
             session.add(new_review)
             await session.commit()
             await session.refresh(new_review)
-
+            
             return new_review
-
+            
         except HTTPException:
             raise
         except Exception as e:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=500,
                 detail=f"Failed to create review: {str(e)}"
             )
