@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import List
 
 from src.books.schemas import Book
+from src.reviews.schemas import ReviewResponseModel
 
 
 class UserCreateModel(BaseModel):
@@ -29,6 +30,7 @@ class UserResponseModel(BaseModel):
 
 class UserBooksModel(UserResponseModel):
     books: List[Book]
+    reviews: List[ReviewResponseModel]
 
 
 class UserLoginModel(BaseModel):
