@@ -34,6 +34,14 @@ async def get_user_books(
     token_details: dict = Depends(access_token_bearer),
 ):
     
+    token_user_uid = token_details.get("user")["user_uid"]
+
+    if token_user_uid != user_uid:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only access your own books"
+        )
+    
     books = await book_service.get_user_books(user_uid, session)
     return books
 
