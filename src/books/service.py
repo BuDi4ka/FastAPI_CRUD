@@ -3,13 +3,20 @@ from sqlmodel import select, desc
 
 from datetime import datetime
 
-from .models import Book 
+from .models import Book
 from .schemas import BookCreateModel, BookUpdateModel
 
 
 class BookService:
     async def get_all_books(self, session: AsyncSession):
         stmt = select(Book).order_by(desc(Book.created_at))
+        result = await session.exec(stmt)
+        books = result.all()
+
+        return books
+    
+    async def get_user_books(self, user_uid: str, session: AsyncSession):
+        stmt = select(Book).where(Book.user_uid == user_uid)
         result = await session.exec(stmt)
         books = result.all()
 
@@ -23,9 +30,13 @@ class BookService:
 
         return book if book is not None else None
 
-    async def create_book(self, book_create_data: BookCreateModel, session: AsyncSession):
+    async def create_book(
+        self, book_create_data: BookCreateModel, user_uid: str, session: AsyncSession
+    ):
         book_data = book_create_data.model_dump()
         new_book = Book(**book_data)
+
+        new_book.user_uid = user_uid
 
         session.add(new_book)
         await session.commit()
