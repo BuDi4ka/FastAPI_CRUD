@@ -10,6 +10,13 @@ from src.auth.utils import decode_token
 from src.db.models import User
 from src.db.redis import check_jti_in_blocklist
 from src.db.main import get_session
+from src.errors import (
+    InvalidToken,
+    RefreshTokenRequired,
+    AccessTokenRequired,
+    InsufficientPermission
+
+)
 
 from .service import UserService
 
@@ -30,22 +37,10 @@ class TokenBearer(HTTPBearer):
         token_data = decode_token(token)
 
         if not self.token_valid(token):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail={
-                    "error": "Your token is invalid or expired",
-                    "resolution": "Please get a new token",
-                },
-            )
+            raise InvalidToken()
 
         if await check_jti_in_blocklist(token_data["jti"]):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail={
-                    "error": "Your token is invalid or has been revoked",
-                    "resolution": "Please get a new token",
-                },
-            )
+            raise InvalidToken()
 
         self.verify_token_data(token_data)
 
@@ -64,20 +59,14 @@ class AccessTokenBearer(TokenBearer):
 
     def verify_token_data(self, token_data: dict) -> None:
         if token_data and token_data.get("refresh"):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Please provide an access token",
-            )
+            raise AccessTokenRequired()
 
 
 class RefreshTokenBearer(TokenBearer):
 
     def verify_token_data(self, token_data: dict) -> None:
         if token_data and not token_data.get("refresh"):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Please provide a refresh token",
-            )
+            raise RefreshTokenRequired()
 
 
 async def get_current_user(
@@ -101,7 +90,4 @@ class RoleChecker:
         if current_user.role in self.allowed_roles:
             return True
 
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not permitted to perfom this action",
-        )
+        raise InsufficientPermission()

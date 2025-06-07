@@ -4,6 +4,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from src.auth.dependencies import RoleChecker, get_current_user
 from src.db.main import get_session
 from src.db.models import User
+from src.errors import BookNotFound
 
 from .schemas import ReviewCreateModel
 from .service import ReviewService
@@ -26,7 +27,7 @@ async def get_review(review_uid: str, session: AsyncSession = Depends(get_sessio
     book = await review_service.get_review(review_uid, session)
 
     if not book:
-        raise
+        raise BookNotFound()
 
 
 @review_router.post("/book/{book_uid}", dependencies=[user_role_checker])
