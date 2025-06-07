@@ -19,7 +19,7 @@ from src.db.redis import add_jti_to_blocklist
 
 auth_router = APIRouter()
 user_service = UserService()
-role_checker = RoleChecker(["admin"])
+role_checker = RoleChecker(["admin", "user"])
 
 REFRESH_TOKEN_EXPIRY = 2
 
@@ -100,7 +100,7 @@ async def get_new_access_token(token_details: dict = Depends(RefreshTokenBearer(
     return {}
 
 
-@auth_router.get("/me")
+@auth_router.get("/me", response_model=UserResponseModel)
 async def get_current_user(
     user=Depends(get_current_user), _: bool = Depends(role_checker)
 ):
