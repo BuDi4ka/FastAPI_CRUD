@@ -30,5 +30,12 @@ class UserService:
 
         session.add(new_user)
         await session.commit()
+    #     await session.refresh(new_user)  # get ID populated
+
+    # # Re-fetch with books eagerly loaded
+    #     result = await session.execute(
+    #         select(User).options(selectinload(User.books)).where(User.id == new_user.id)
+    #     )
+    #     return result.scalars().first()
 
         return new_user
