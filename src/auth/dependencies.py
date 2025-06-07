@@ -7,7 +7,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from typing import List
 
 from src.auth.utils import decode_token
-from src.auth.models import User
+from src.db.models import User
 from src.db.redis import check_jti_in_blocklist
 from src.db.main import get_session
 

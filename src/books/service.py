@@ -3,7 +3,7 @@ from sqlmodel import select, desc
 
 from datetime import datetime
 
-from .models import Book
+from src.db.models import Book
 from .schemas import BookCreateModel, BookUpdateModel
 
 
