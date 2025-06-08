@@ -10,6 +10,7 @@ from src.db.main import init_db
 from .errors import register_all_errors
 from .middleware import register_middleware
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("server is starting")
