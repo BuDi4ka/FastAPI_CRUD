@@ -1,5 +1,11 @@
 from fastapi_mail import FastMail, ConnectionConfig
+
+from pathlib import Path
+
 from src.config import Config
+
+
+BASE_DIR = Path(__file__).resolve().parent
 
 
 mail_config = ConnectionConfig(
@@ -13,6 +19,10 @@ mail_config = ConnectionConfig(
     MAIL_SSL_TLS=True,
     USE_CREDENTIALS=True,
     VALIDATE_CERTS=True,
+    TEMPLATE_FOLDER=Path(BASE_DIR, "templates"),
 )
 
 mail = FastMail(config=mail_config)
+
+
+mail.send_message()
