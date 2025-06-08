@@ -17,7 +17,7 @@ def register_middleware(app: FastAPI):
         response = await call_next(request)
         end_time = time.time() - start_time
 
-        message = f"{request.method} - {request.url.path} - {end_time}s"
+        message = f"{request.client.host}:{request.client.port} - {request.method} - {request.url.path} - {response.status_code} - {end_time}s"
 
         print(message)
 
