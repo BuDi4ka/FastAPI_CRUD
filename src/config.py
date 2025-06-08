@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     MAIL_PASSWORD: str
     MAIL_FROM: str
     MAIL_PORT: int
-    MAIL_SERVER: int
+    MAIL_SERVER: str
     MAIL_FROM_NAME: str
 
     model_config = SettingsConfigDict(
