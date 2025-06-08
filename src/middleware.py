@@ -1,6 +1,7 @@
 from fastapi import FastAPI, status
 from fastapi.requests import Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
 import time
@@ -45,6 +46,11 @@ def register_middleware(app: FastAPI):
         allow_methods=["*"],  
         allow_headers=["*"], 
         allow_credentials=True,
+    )
+
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=[""]
     )
     
 
