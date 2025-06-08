@@ -7,6 +7,12 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str
     REDIS_HOST: str
     REDIS_PORT: int
+    MAIL_USERNAME: str
+    MAIL_PASSWORD: str
+    MAIL_FROM: str
+    MAIL_PORT: int
+    MAIL_SERVER: int
+    MAIL_FROM_NAME: str
 
     model_config = SettingsConfigDict(
         env_file = '.env',
