@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 class ReviewResponseModel(BaseModel):
     uid: uuid.UUID
-    rating: int = Field(lt=5)
+    rating: int = Field(le=5)
     review_text: str
     user_uid: Optional[uuid.UUID]
     book_uid: Optional[uuid.UUID]
