@@ -40,3 +40,11 @@ class UserLoginModel(BaseModel):
 
 class EmailModel(BaseModel):
     addresses: List[str]
+
+
+class PasswordResetRequestModel(BaseModel):
+    email: str = Field(..., description="Email to send reset link to")
+
+class PasswordResetModel(BaseModel):
+    password: str = Field(..., min_length=8, description="New password")
+    confirm_password: str = Field(..., min_length=8, description="Confirm new password")
