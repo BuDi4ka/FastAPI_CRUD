@@ -26,7 +26,7 @@ from .dependencies import (
 
 from src.db.main import get_session
 from src.db.redis import add_jti_to_blocklist
-from src.errors import UserAlreadyExists, InvalidToken, InvalidCredentials
+from src.errors import UserAlreadyExists, UserNotFound, InvalidToken, InvalidCredentials
 from src.mail import mail, create_message
 from src.config import Config
 
@@ -82,6 +82,23 @@ async def create_user_account(
         "message": "Account Created! Check email to verify your account",
         "user": new_user
     }
+
+
+@auth_router.get('/verify/{token}')
+async def verify_user_account(token: str, session: AsyncSession =  Depends(get_session)):
+    token_data = decode_url_token(token)
+
+    user_email = token_data.get('email')
+
+    if user_email:
+        user = user_service.get_user_by_email(user_email, session)
+
+    if not user:
+        raise UserNotFound()
+    
+    
+
+
 
 
 @auth_router.post("/login")

@@ -64,7 +64,7 @@ def create_url_token(data: dict):
     return token 
 
 
-def decode_url_token(token: str):
+def decode_url_token(token: str) -> dict:
     try:
         token_data = SERIALIZER.loads(token)
         return token_data
