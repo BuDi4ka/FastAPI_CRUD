@@ -183,15 +183,23 @@ async def revoke_token(token_details: dict = Depends(AccessTokenBearer())):
 
 @auth_router.post("/password-reset-request")
 async def request_password_reset(
-    reset_data: PasswordResetRequestModel, session: AsyncSession = Depends(get_session)
+    reset_data: PasswordResetRequestModel, 
+    token_details: dict = Depends(AccessTokenBearer()),
+    session: AsyncSession = Depends(get_session)
 ):
+    # Get authenticated user's email from token
+    authenticated_user_email = token_details.get("user")["email"]
+    
+    # Verify the request is for the authenticated user
+    if authenticated_user_email != reset_data.email:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only request password reset for your own account"
+        )
+
     user = await user_service.get_user_by_email(reset_data.email, session)
     if not user:
-        # Return success even if user doesn't exist for security
-        return JSONResponse(
-            content={"message": "If account exists, password reset link has been sent"},
-            status_code=status.HTTP_200_OK,
-        )
+        raise UserNotFound()
 
     # Create token with email
     token = create_url_token({"email": user.email})
@@ -223,20 +231,32 @@ async def request_password_reset(
 async def reset_password(
     token: str,
     password_data: PasswordResetModel,
+    token_details: dict = Depends(AccessTokenBearer()),
     session: AsyncSession = Depends(get_session),
 ):
-    # Verify passwords match
-    if password_data.password != password_data.confirm_password:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Passwords don't match"
-        )
-
-    # Decode token
-    token_data = decode_url_token(token)
-    user_email = token_data.get("email")
+    # Get authenticated user's email from token
+    authenticated_user_email = token_details.get("user")["email"]
+    
+    # Decode reset token
+    reset_token_data = decode_url_token(token)
+    user_email = reset_token_data.get("email")
 
     if not user_email:
         raise InvalidToken()
+
+    # Verify the reset is for the authenticated user
+    if authenticated_user_email != user_email:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only reset password for your own account"
+        )
+
+    # Verify passwords match
+    if password_data.password != password_data.confirm_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Passwords don't match"
+        )
 
     # Get user and update password
     user = await user_service.get_user_by_email(user_email, session)
@@ -245,7 +265,11 @@ async def reset_password(
 
     # Update password
     new_password_hash = generate_password_hash(password_data.password)
-    await user_service.update_user(user, {"password_hash": new_password_hash}, session)
+    await user_service.update_user(
+        user, 
+        {"password_hash": new_password_hash}, 
+        session
+    )
 
     return JSONResponse(
         content={"message": "Password successfully reset"},
