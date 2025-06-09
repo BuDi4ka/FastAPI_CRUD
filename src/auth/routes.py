@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, BackgroundTasks
 from fastapi.responses import JSONResponse
 from sqlmodel.ext.asyncio.session import AsyncSession
 from datetime import timedelta, datetime
@@ -55,7 +55,7 @@ async def send_mail(emails: EmailModel):
 
 @auth_router.post("/signup", status_code=status.HTTP_201_CREATED)
 async def create_user_account(
-    user_data: UserCreateModel, session: AsyncSession = Depends(get_session)
+    user_data: UserCreateModel, bg_tasks: BackgroundTasks, session: AsyncSession = Depends(get_session)
 ):
     email = user_data.email
 
@@ -78,7 +78,7 @@ async def create_user_account(
         recipients=[email], subject="Verify your email", body=html_message
     )
 
-    await mail.send_message(message)
+    bg_tasks.add_task(mail.send_message, message)
 
     return {
         "message": "Account Created! Check email to verify your account",
