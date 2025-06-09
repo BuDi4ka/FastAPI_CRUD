@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     MAIL_PORT: int
     MAIL_SERVER: str
     MAIL_FROM_NAME: str
+    DOMAIN: str
 
     model_config = SettingsConfigDict(
         env_file = '.env',

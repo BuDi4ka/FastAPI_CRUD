@@ -3,23 +3,26 @@ import uuid
 import logging
 from passlib.context import CryptContext
 from datetime import timedelta, datetime
+from itsdangerous import URLSafeSerializer
 
 from src.config import Config
 
 
-password_context = CryptContext(schemes=["bcrypt"])
+PASSWORD_CONTEXT = CryptContext(schemes=["bcrypt"])
+
+SERIALIZER = URLSafeSerializer(secret_key=Config.JWT_SECRET, salt="email-verification")
 
 ACCESS_TOKEN_EXPIRY = 3600
 
 
 def generate_password_hash(password: str) -> str:
-    hash = password_context.hash(password)
+    hash = PASSWORD_CONTEXT.hash(password)
 
     return hash
 
 
 def verify_password(password: str, hash: str) -> bool:
-    return password_context.verify(password, hash)
+    return PASSWORD_CONTEXT.verify(password, hash)
 
 
 def create_access_token(
@@ -53,4 +56,17 @@ def decode_token(token: str) -> dict:
 
     except jwt.PyJWTError as e:
         logging.exception(e)
-        return None
+
+
+def create_url_token(data: dict):
+    token = SERIALIZER.dumps(data, salt="email-verification")
+
+    return token 
+
+
+def decode_url_token(token: str):
+    try:
+        token_data = SERIALIZER.loads(token)
+        return token_data
+    except Exception as e:
+        logging.error(str(e))
