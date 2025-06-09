@@ -9,6 +9,8 @@ from .schemas import (
     UserLoginModel,
     UserBooksModel,
     EmailModel,
+    PasswordResetRequestModel,
+    PasswordResetModel,
 )
 from .service import UserService
 from .utils import (
@@ -16,6 +18,7 @@ from .utils import (
     verify_password,
     create_url_token,
     decode_url_token,
+    generate_password_hash
 )
 from .dependencies import (
     RefreshTokenBearer,
@@ -176,3 +179,75 @@ async def revoke_token(token_details: dict = Depends(AccessTokenBearer())):
     await add_jti_to_blocklist(jti)
 
     return JSONResponse(content={"message": "Logged out successfully"})
+
+
+@auth_router.post("/password-reset-request")
+async def request_password_reset(
+    reset_data: PasswordResetRequestModel, session: AsyncSession = Depends(get_session)
+):
+    user = await user_service.get_user_by_email(reset_data.email, session)
+    if not user:
+        # Return success even if user doesn't exist for security
+        return JSONResponse(
+            content={"message": "If account exists, password reset link has been sent"},
+            status_code=status.HTTP_200_OK,
+        )
+
+    # Create token with email
+    token = create_url_token({"email": user.email})
+
+    # Create reset link
+    reset_link = f"http://{Config.DOMAIN}/api/v1/auth/password-reset/{token}"
+
+    # Create email content
+    html_message = f"""
+    <h1>Password Reset Request</h1>
+    <p>Click this <a href="{reset_link}">link</a> to reset your password.</p>
+    <p>If you didn't request this, please ignore this email.</p>
+    <p>{token}</p>
+    """
+
+    # Send email
+    message = create_message(
+        recipients=[user.email], subject="Password Reset Request", body=html_message
+    )
+    await mail.send_message(message)
+
+    return JSONResponse(
+        content={"message": "If account exists, password reset link has been sent"},
+        status_code=status.HTTP_200_OK,
+    )
+
+
+@auth_router.post("/password-reset/{token}")
+async def reset_password(
+    token: str,
+    password_data: PasswordResetModel,
+    session: AsyncSession = Depends(get_session),
+):
+    # Verify passwords match
+    if password_data.password != password_data.confirm_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Passwords don't match"
+        )
+
+    # Decode token
+    token_data = decode_url_token(token)
+    user_email = token_data.get("email")
+
+    if not user_email:
+        raise InvalidToken()
+
+    # Get user and update password
+    user = await user_service.get_user_by_email(user_email, session)
+    if not user:
+        raise UserNotFound()
+
+    # Update password
+    new_password_hash = generate_password_hash(password_data.password)
+    await user_service.update_user(user, {"password_hash": new_password_hash}, session)
+
+    return JSONResponse(
+        content={"message": "Password successfully reset"},
+        status_code=status.HTTP_200_OK,
+    )
