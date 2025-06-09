@@ -9,7 +9,6 @@ from .schemas import (
     UserLoginModel,
     UserBooksModel,
     EmailModel,
-    PasswordResetRequestModel,
     PasswordResetModel,
 )
 from .service import UserService
@@ -29,7 +28,7 @@ from .dependencies import (
 
 from src.db.main import get_session
 from src.db.redis import add_jti_to_blocklist
-from src.errors import UserAlreadyExists, UserNotFound, InvalidToken, InvalidCredentials
+from src.errors import UserAlreadyExists, UserNotFound, InvalidToken, InvalidCredentials, AccountNotVerified
 from src.mail import mail, create_message
 from src.config import Config
 
@@ -114,41 +113,52 @@ async def verify_user_account(token: str, session: AsyncSession = Depends(get_se
 
 @auth_router.post("/login")
 async def login(
-    login_data: UserLoginModel, session: AsyncSession = Depends(get_session)
+    login_data: UserLoginModel, 
+    session: AsyncSession = Depends(get_session)
 ):
     email = login_data.email
     password = login_data.password
 
+    # Check if user exists
     user = await user_service.get_user_by_email(email, session)
+    if not user:
+        raise InvalidCredentials()
 
-    if user is not None:
-        password_valid = verify_password(password, user.password_hash)
+    # Check if user is verified
+    if not user.is_verified:
+        raise AccountNotVerified()
 
-        if password_valid:
-            access_token = create_access_token(
-                user_data={
-                    "email": user.email,
-                    "user_uid": str(user.uid),
-                    "role": user.role,
-                }
-            )
+    # Validate password
+    if not verify_password(password, user.password_hash):
+        raise InvalidCredentials()
 
-            refresh_token = create_access_token(
-                user_data={"email": user.email, "user_uid": str(user.uid)},
-                refresh=True,
-                expiry=timedelta(days=REFRESH_TOKEN_EXPIRY),
-            )
+    # Create tokens
+    access_token = create_access_token(
+        user_data={
+            "email": user.email,
+            "user_uid": str(user.uid),
+            "role": user.role,
+        }
+    )
 
-            return JSONResponse(
-                content={
-                    "message": "Login successful",
-                    "access_token": access_token,
-                    "refresh_token": refresh_token,
-                    "user": {"email": user.email, "uid": str(user.uid)},
-                }
-            )
+    refresh_token = create_access_token(
+        user_data={"email": user.email, "user_uid": str(user.uid)},
+        refresh=True,
+        expiry=timedelta(days=REFRESH_TOKEN_EXPIRY),
+    )
 
-    raise InvalidCredentials()
+    return JSONResponse(
+        content={
+            "message": "Login successful",
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "user": {
+                "email": user.email,
+                "uid": str(user.uid),
+                "is_verified": user.is_verified  # Added this for clarity
+            },
+        }
+    )
 
 
 @auth_router.get("/refresh_token")
@@ -183,21 +193,13 @@ async def revoke_token(token_details: dict = Depends(AccessTokenBearer())):
 
 @auth_router.post("/password-reset-request")
 async def request_password_reset(
-    reset_data: PasswordResetRequestModel, 
     token_details: dict = Depends(AccessTokenBearer()),
     session: AsyncSession = Depends(get_session)
 ):
     # Get authenticated user's email from token
-    authenticated_user_email = token_details.get("user")["email"]
+    user_email = token_details.get("user")["email"]
     
-    # Verify the request is for the authenticated user
-    if authenticated_user_email != reset_data.email:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only request password reset for your own account"
-        )
-
-    user = await user_service.get_user_by_email(reset_data.email, session)
+    user = await user_service.get_user_by_email(user_email, session)
     if not user:
         raise UserNotFound()
 
@@ -217,12 +219,14 @@ async def request_password_reset(
 
     # Send email
     message = create_message(
-        recipients=[user.email], subject="Password Reset Request", body=html_message
+        recipients=[user.email], 
+        subject="Password Reset Request", 
+        body=html_message
     )
     await mail.send_message(message)
 
     return JSONResponse(
-        content={"message": "If account exists, password reset link has been sent"},
+        content={"message": "Password reset link has been sent to your email"},
         status_code=status.HTTP_200_OK,
     )
 
@@ -248,7 +252,7 @@ async def reset_password(
     if authenticated_user_email != user_email:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only reset password for your own account"
+            detail="Invalid reset token for current user"
         )
 
     # Verify passwords match
@@ -258,7 +262,6 @@ async def reset_password(
             detail="Passwords don't match"
         )
 
-    # Get user and update password
     user = await user_service.get_user_by_email(user_email, session)
     if not user:
         raise UserNotFound()
