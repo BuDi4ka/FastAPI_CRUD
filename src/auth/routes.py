@@ -91,7 +91,7 @@ async def verify_user_account(token: str, session: AsyncSession = Depends(get_se
     user_email = token_data.get("email")
 
     if user_email:
-        user = user_service.get_user_by_email(user_email, session)
+        user = await user_service.get_user_by_email(user_email, session)
 
         if not user:
             raise UserNotFound()
