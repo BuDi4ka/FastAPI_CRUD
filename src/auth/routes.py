@@ -51,9 +51,7 @@ async def send_mail(emails: EmailModel):
     return {"message": "Email sent successfully"}
 
 
-@auth_router.post(
-    "/signup", status_code=status.HTTP_201_CREATED
-)
+@auth_router.post("/signup", status_code=status.HTTP_201_CREATED)
 async def create_user_account(
     user_data: UserCreateModel, session: AsyncSession = Depends(get_session)
 ):
@@ -74,31 +72,41 @@ async def create_user_account(
     <p>Please click this <a href="{link}">link</a> to verify your email</p>
     """
 
-    message = create_message(recipients=[email], subject="Verify your email", body=html_message)
+    message = create_message(
+        recipients=[email], subject="Verify your email", body=html_message
+    )
 
     await mail.send_message(message)
 
     return {
         "message": "Account Created! Check email to verify your account",
-        "user": new_user
+        "user": new_user,
     }
 
 
-@auth_router.get('/verify/{token}')
-async def verify_user_account(token: str, session: AsyncSession =  Depends(get_session)):
+@auth_router.get("/verify/{token}")
+async def verify_user_account(token: str, session: AsyncSession = Depends(get_session)):
     token_data = decode_url_token(token)
 
-    user_email = token_data.get('email')
+    user_email = token_data.get("email")
 
     if user_email:
         user = user_service.get_user_by_email(user_email, session)
 
-    if not user:
-        raise UserNotFound()
-    
-    
+        if not user:
+            raise UserNotFound()
 
+        await user_service.update_user(user, {"is_verified": True}, session)
 
+        return JSONResponse(
+            content={"message": "Account verified"},
+            status_code=status.HTTP_200_OK,
+        )
+
+    return JSONResponse(
+        content={"message": "Error occured during verification"},
+        status_code=status.HTTP_400_BAD_REQUEST,
+    )
 
 
 @auth_router.post("/login")
